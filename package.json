@@ -13,6 +13,7 @@
   "author": "Clemens Akens <clebert@me.com>",
   "sideEffects": false,
   "files": [
+    "index.html",
     "lib"
   ],
   "scripts": {
