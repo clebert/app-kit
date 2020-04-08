@@ -28,8 +28,8 @@ function createLambdaConfig(apiName) {
     node: {__dirname: false},
     entry: `./src/api/lambdas/${apiName}.ts`,
     output: {
-      filename: `${apiName}.bundle.js`,
-      path: path.resolve(__dirname, 'lib/api/lambdas'),
+      filename: `${apiName}.js`,
+      path: path.resolve(__dirname, 'lib/api/lambdas/bundles'),
       libraryTarget: 'commonjs2',
     },
     module: {rules: [tsLoader]},
