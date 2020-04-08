@@ -65,6 +65,8 @@
     "webpack-cli": "^3.3.11"
   },
   "peerDependencies": {
+    "@types/aws-lambda": "^8.10.47",
+    "@types/history": "^4.7.5",
     "preact": "^10.4.0"
   },
   "publishConfig": {
