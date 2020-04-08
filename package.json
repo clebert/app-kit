@@ -23,6 +23,8 @@
     "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
     "format:test": "prettier --list-different '**/*.{html,js,json,md,ts,tsx,yml}'",
     "lint": "tslint --config tslint.json --project tsconfig.json --format verbose",
+    "release": "npm version",
+    "postrelease": "git push --follow-tags",
     "test": "jest",
     "watch": "run-p watch:*",
     "watch:build": "webpack --mode development --watch",
