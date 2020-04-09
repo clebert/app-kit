@@ -34,7 +34,6 @@ function createLambdaConfig(apiName) {
     },
     module: {rules: [tsLoader]},
     resolve: {extensions: ['.js', '.json', '.ts', '.tsx']},
-    devtool: 'inline-source-map',
   };
 }
 

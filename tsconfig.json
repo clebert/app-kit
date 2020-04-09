@@ -14,8 +14,6 @@
     "jsxFactory": "preact.h",
     "pretty": true,
     "declaration": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
     "esModuleInterop": true,
     "outDir": "lib",
     "rootDir": "src"
