@@ -27,21 +27,22 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
       initialState,
     } = this.init;
 
-    const referenceResult = GithubApi.assertSuccessfulResult(
-      await githubApi.getReference(repositoryId, referenceName)
+    const referenceResult = await githubApi.getReference(
+      repositoryId,
+      referenceName
     );
+
+    GithubApi.assertSuccessfulResult(referenceResult);
 
     const commitSha = referenceResult.value.object.sha;
+    const commitResult = await githubApi.getCommit(repositoryId, commitSha);
 
-    const commitResult = GithubApi.assertSuccessfulResult(
-      await githubApi.getCommit(repositoryId, commitSha)
-    );
+    GithubApi.assertSuccessfulResult(commitResult);
 
     const treeSha = commitResult.value.tree.sha;
+    const treeResult = await githubApi.getTree(repositoryId, treeSha);
 
-    const treeResult = GithubApi.assertSuccessfulResult(
-      await githubApi.getTree(repositoryId, treeSha)
-    );
+    GithubApi.assertSuccessfulResult(treeResult);
 
     if (treeResult.value.truncated) {
       throw new Error('Too many files.');
@@ -56,9 +57,9 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
       return {state: initialState, version};
     }
 
-    const blobResult = GithubApi.assertSuccessfulResult(
-      await githubApi.getBlob(repositoryId, blobSha)
-    );
+    const blobResult = await githubApi.getBlob(repositoryId, blobSha);
+
+    GithubApi.assertSuccessfulResult(blobResult);
 
     const state = JSON.parse(decode(blobResult.value.content.trim()));
 
@@ -71,18 +72,21 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
   ): Promise<Snapshot<TState, GithubVersion> | undefined> {
     const {githubApi, repositoryId, referenceName, filename} = this.init;
 
-    const blobResult = GithubApi.assertSuccessfulResult(
-      await githubApi.createBlob(repositoryId, encode(JSON.stringify(state)))
+    const blobResult = await githubApi.createBlob(
+      repositoryId,
+      encode(JSON.stringify(state))
     );
 
-    const treeResult = GithubApi.assertSuccessfulResult(
-      await githubApi.createTree(
-        repositoryId,
-        filename,
-        blobResult.value.sha,
-        baseVersion.treeSha
-      )
+    GithubApi.assertSuccessfulResult(blobResult);
+
+    const treeResult = await githubApi.createTree(
+      repositoryId,
+      filename,
+      blobResult.value.sha,
+      baseVersion.treeSha
     );
+
+    GithubApi.assertSuccessfulResult(treeResult);
 
     if (treeResult.value.truncated) {
       throw new Error('Too many files.');
@@ -90,14 +94,14 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
 
     const treeSha = treeResult.value.sha;
 
-    const commitResult = GithubApi.assertSuccessfulResult(
-      await githubApi.createCommit(
-        repositoryId,
-        `Update "${filename}"`,
-        treeSha,
-        baseVersion.commitSha
-      )
+    const commitResult = await githubApi.createCommit(
+      repositoryId,
+      `Update "${filename}"`,
+      treeSha,
+      baseVersion.commitSha
     );
+
+    GithubApi.assertSuccessfulResult(commitResult);
 
     const commitSha = commitResult.value.sha;
 

@@ -28,8 +28,8 @@
     "postrelease": "git push --follow-tags",
     "test": "jest",
     "watch": "run-p watch:*",
-    "watch:build": "webpack --mode development --watch",
-    "watch:compile": "tsc --build --watch"
+    "watch:tsc": "tsc --build --watch",
+    "watch:webpack": "webpack --mode development --watch"
   },
   "dependencies": {
     "classnames": "^2.2.6",

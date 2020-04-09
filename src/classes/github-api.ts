@@ -1,3 +1,5 @@
+import {createRandomValue} from '../utils/create-random-value';
+
 export interface GithubApiSuccessfulResult<TValue> {
   readonly value: TValue;
   readonly eTag: string;
@@ -71,6 +73,12 @@ export interface CreateBlobResultValue {
 // https://developer.github.com/v3/git/refs/#response-3
 export interface UpdateReferenceResultValue {}
 
+export interface CreateRepositoryOptions {
+  readonly organizationName?: string;
+  readonly description?: string;
+  readonly isPrivate?: boolean;
+}
+
 const errorMessagePrefix = 'Fetching GitHub API failed: ';
 
 export class GithubApi {
@@ -82,12 +90,10 @@ export class GithubApi {
 
   public static assertSuccessfulResult<TResultValue>(
     result: GithubApiResult<TResultValue>
-  ): GithubApiSuccessfulResult<TResultValue> {
+  ): asserts result is GithubApiSuccessfulResult<TResultValue> {
     if (GithubApi.isErrorResult(result)) {
       throw new Error(result.message);
     }
-
-    return result;
   }
 
   private readonly baseHeaders: Readonly<Record<string, string>>;
@@ -157,13 +163,19 @@ export class GithubApi {
   }
 
   public async createRepository(
-    repositoryName: string
+    repositoryName: string,
+    options: CreateRepositoryOptions = {}
   ): Promise<GithubApiResult<CreateRepositoryResultValue>> {
-    return this.fetch('POST', '/user/repos', {
+    const {organizationName, description, isPrivate} = options;
+
+    const pathname = organizationName
+      ? `/orgs/${organizationName}/repos`
+      : '/user/repos';
+
+    return this.fetch('POST', pathname, {
       name: repositoryName,
-      private: true,
-      has_issues: false,
-      has_wiki: false,
+      description,
+      private: isPrivate,
       auto_init: true,
     });
   }
@@ -237,12 +249,10 @@ export class GithubApi {
     bypassBrowserCache: boolean = false
   ): Promise<GithubApiResult<TResultValue>> {
     try {
-      const randomValue = String(Math.random()).slice(2);
-
       return this.createResult(
         await fetch(
           bypassBrowserCache
-            ? `https://api.github.com${pathname}?bypassBrowserCache=${randomValue}`
+            ? `https://api.github.com${pathname}?bypassBrowserCache=${createRandomValue()}`
             : `https://api.github.com${pathname}`,
           {headers: this.baseHeaders}
         )
