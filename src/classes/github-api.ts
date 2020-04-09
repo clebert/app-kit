@@ -19,6 +19,16 @@ export interface RepositoryId {
   readonly repositoryName: string;
 }
 
+export interface Repository {
+  readonly archived: boolean;
+
+  readonly permissions: {
+    readonly admin: boolean;
+    readonly push: boolean;
+    readonly pull: boolean;
+  };
+}
+
 // https://developer.github.com/v3/users/#response-with-public-profile-information
 export interface GetUserResultValue {
   readonly login: string;
@@ -26,9 +36,7 @@ export interface GetUserResultValue {
 }
 
 // https://developer.github.com/v3/repos/#response-4
-export interface GetRepositoryResultValue {
-  readonly description: string;
-}
+export type GetRepositoryResultValue = Repository;
 
 // https://developer.github.com/v3/git/refs/#response
 export interface GetReferenceResultValue {
@@ -52,7 +60,7 @@ export interface GetBlobResultValue {
 }
 
 // https://developer.github.com/v3/repos/#response-2
-export interface CreateRepositoryResultValue {}
+export type CreateRepositoryResultValue = Repository;
 
 // https://developer.github.com/v3/git/commits/#response-1
 export interface CreateCommitResultValue {
@@ -75,8 +83,7 @@ export interface UpdateReferenceResultValue {}
 
 export interface CreateRepositoryOptions {
   readonly organizationName?: string;
-  readonly description?: string;
-  readonly isPrivate?: boolean;
+  readonly private?: boolean;
 }
 
 const errorMessagePrefix = 'Fetching GitHub API failed: ';
@@ -166,7 +173,7 @@ export class GithubApi {
     repositoryName: string,
     options: CreateRepositoryOptions = {}
   ): Promise<GithubApiResult<CreateRepositoryResultValue>> {
-    const {organizationName, description, isPrivate} = options;
+    const {organizationName} = options;
 
     const pathname = organizationName
       ? `/orgs/${organizationName}/repos`
@@ -174,8 +181,7 @@ export class GithubApi {
 
     return this.fetch('POST', pathname, {
       name: repositoryName,
-      description,
-      private: isPrivate,
+      private: options.private,
       auto_init: true,
     });
   }

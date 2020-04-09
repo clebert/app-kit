@@ -39,9 +39,7 @@ export function useGithubStore<TState>(
         if (GithubApi.isErrorResult(repositoryResult)) {
           if (repositoryResult.code === 404) {
             GithubApi.assertSuccessfulResult(
-              await githubApi.createRepository(repositoryName, {
-                isPrivate: true,
-              })
+              await githubApi.createRepository(repositoryName, {private: true})
             );
           } else {
             throw new Error(repositoryResult.message);

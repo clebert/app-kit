@@ -6,22 +6,28 @@ import {useLocalStorage} from '../hooks/use-local-storage';
 import {useSearchParam} from '../hooks/use-search-param';
 import {createRandomValue} from '../utils/create-random-value';
 
+export interface LoggedOutGithubAuth {
+  readonly readyState: 'loggedOut';
+
+  login(): void;
+}
+
+export interface LoggingInGithubAuth {
+  readonly readyState: 'loggingIn';
+}
+
+export interface LoggedInGithubAuth {
+  readonly readyState: 'loggedIn';
+  readonly token: string;
+  readonly user: GetUserResultValue;
+
+  logout(): void;
+}
+
 export type GithubAuth =
-  | {
-      readonly readyState: 'loggedOut';
-
-      login(): void;
-    }
-  | {
-      readonly readyState: 'loggingIn';
-    }
-  | {
-      readonly readyState: 'loggedIn';
-      readonly token: string;
-      readonly user: GetUserResultValue;
-
-      logout(): void;
-    };
+  | LoggedOutGithubAuth
+  | LoggingInGithubAuth
+  | LoggedInGithubAuth;
 
 export function useGithubAuth(): GithubAuth {
   const [error, setError] = hooks.useState<Error | undefined>(undefined);
