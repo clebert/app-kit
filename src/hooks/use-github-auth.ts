@@ -29,7 +29,7 @@ export type GithubAuth =
   | LoggingInGithubAuth
   | LoggedInGithubAuth;
 
-export function useGithubAuth(): GithubAuth {
+export function useGithubAuth(authorizerApiPathname: string): GithubAuth {
   const [error, setError] = hooks.useState<Error | undefined>(undefined);
 
   if (error) {
@@ -57,7 +57,7 @@ export function useGithubAuth(): GithubAuth {
     const {pathname, search} = history.location;
 
     sessionStorage.setItem(
-      'target',
+      'originalPath',
       search ? `${pathname}${search}` : pathname
     );
 
@@ -65,11 +65,11 @@ export function useGithubAuth(): GithubAuth {
 
     searchParams.set('sessionId', newSessionId);
 
-    window.location.href = `/api/authorize?${searchParams.toString()}`;
+    window.location.href = `${authorizerApiPathname}?${searchParams.toString()}`;
   }, [loggedIn, token]);
 
-  const target = hooks.useMemo(
-    () => sessionStorage.getItem('target') || '/',
+  const originalPath = hooks.useMemo(
+    () => sessionStorage.getItem('originalPath') || '/',
     []
   );
 
@@ -85,7 +85,7 @@ export function useGithubAuth(): GithubAuth {
       return;
     }
 
-    history.replace(target);
+    history.replace(originalPath);
 
     if (!sessionIdParam || sessionIdParam !== sessionId) {
       throw new Error('Untrusted OAuth transaction.');
