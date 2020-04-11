@@ -1,10 +1,10 @@
 import {Subject} from 'ironhook';
 import defer from 'p-defer';
-import {AsyncReducer, Snapshot, useAsyncReducer} from './use-async-reducer';
+import {AsyncStore, Snapshot, useAsyncStore} from './use-async-store';
 
 jest.mock('preact/hooks', () => require('ironhook'));
 
-interface AsyncStoreMock {
+interface AsyncStorageMock {
   pullState: jest.Mock;
   pushState: jest.Mock;
 }
@@ -35,8 +35,8 @@ function reducer(previousState: State, action: string): State {
 
 const dispatch = expect.any(Function);
 
-describe('useAsyncReducer()', () => {
-  let asyncStore: AsyncStoreMock;
+describe('useAsyncStore()', () => {
+  let asyncStorage: AsyncStorageMock;
   let observer: ObserverMock;
   let pullState1: defer.DeferredPromise<Snapshot<State, number>>;
   let pullState2: defer.DeferredPromise<Snapshot<State, number>>;
@@ -44,29 +44,34 @@ describe('useAsyncReducer()', () => {
   let pushState2: defer.DeferredPromise<Snapshot<State, number> | undefined>;
 
   beforeEach(() => {
-    asyncStore = {pullState: jest.fn(), pushState: jest.fn()};
+    asyncStorage = {pullState: jest.fn(), pushState: jest.fn()};
 
     pullState1 = defer();
     pullState2 = defer();
 
-    asyncStore.pullState
+    asyncStorage.pullState
       .mockReturnValueOnce(pullState1.promise)
       .mockReturnValueOnce(pullState2.promise);
 
     pushState1 = defer();
     pushState2 = defer();
 
-    asyncStore.pushState
+    asyncStorage.pushState
       .mockReturnValueOnce(pushState1.promise)
       .mockReturnValueOnce(pushState2.promise);
 
     observer = {next: jest.fn(), error: jest.fn(), complete: jest.fn()};
   });
 
-  describe('without async store', () => {
+  describe('without async storage', () => {
     test('initializing -> idle', async () => {
       const subject = new Subject(() =>
-        useAsyncReducer(reducer, undefined, 'x')
+        useAsyncStore({
+          asyncStorage: undefined,
+          reducer,
+          initialState: 'x',
+          defaultState: 'd',
+        })
       );
 
       subject.subscribe(observer);
@@ -84,7 +89,12 @@ describe('useAsyncReducer()', () => {
 
   test('initializing -> idle', async () => {
     const subject = new Subject(() =>
-      useAsyncReducer(reducer, asyncStore, 'x')
+      useAsyncStore({
+        asyncStorage,
+        reducer,
+        initialState: 'x',
+        defaultState: 'd',
+      })
     );
 
     subject.subscribe(observer);
@@ -95,8 +105,8 @@ describe('useAsyncReducer()', () => {
 
     await queueMacrotask();
 
-    expect(asyncStore.pullState.mock.calls).toEqual([[]]);
-    expect(asyncStore.pushState.mock.calls).toEqual([]);
+    expect(asyncStorage.pullState.mock.calls).toEqual([['d']]);
+    expect(asyncStorage.pushState.mock.calls).toEqual([]);
 
     expect(observer.next.mock.calls).toEqual([
       [{readyState: 'initializing', state: 'x', dispatch}],
@@ -108,15 +118,21 @@ describe('useAsyncReducer()', () => {
   });
 
   test('initializing -> idle -> synchronizing -> idle', async () => {
-    let asyncReducer!: AsyncReducer<State, string>;
+    let asyncStore!: AsyncStore<State, string>;
 
     const subject = new Subject(
-      () => (asyncReducer = useAsyncReducer(reducer, asyncStore, 'x'))
+      () =>
+        (asyncStore = useAsyncStore({
+          asyncStorage,
+          reducer,
+          initialState: 'x',
+          defaultState: 'd',
+        }))
     );
 
     subject.subscribe(observer);
 
-    asyncReducer.dispatch('y');
+    asyncStore.dispatch('y');
 
     await queueMicrotask();
 
@@ -124,13 +140,13 @@ describe('useAsyncReducer()', () => {
 
     await queueMicrotask();
 
-    asyncReducer.dispatch('b');
+    asyncStore.dispatch('b');
 
     pushState1.resolve(undefined);
 
     await queueMicrotask();
 
-    asyncReducer!.dispatch('c');
+    asyncStore!.dispatch('c');
 
     pullState2.resolve({state: 'z', version: 2});
 
@@ -140,9 +156,9 @@ describe('useAsyncReducer()', () => {
 
     await queueMacrotask();
 
-    expect(asyncStore.pullState.mock.calls).toEqual([[], []]);
+    expect(asyncStorage.pullState.mock.calls).toEqual([['d'], ['d']]);
 
-    expect(asyncStore.pushState.mock.calls).toEqual([
+    expect(asyncStorage.pushState.mock.calls).toEqual([
       ['ay', 1],
       ['zybc', 2],
     ]);
@@ -165,7 +181,12 @@ describe('useAsyncReducer()', () => {
 
   test('failing pullState()', async () => {
     const subject = new Subject(() =>
-      useAsyncReducer(reducer, asyncStore, 'x')
+      useAsyncStore({
+        asyncStorage,
+        reducer,
+        initialState: 'x',
+        defaultState: 'd',
+      })
     );
 
     subject.subscribe(observer);
@@ -176,8 +197,8 @@ describe('useAsyncReducer()', () => {
 
     await queueMacrotask();
 
-    expect(asyncStore.pullState.mock.calls).toEqual([[]]);
-    expect(asyncStore.pushState.mock.calls).toEqual([]);
+    expect(asyncStorage.pullState.mock.calls).toEqual([['d']]);
+    expect(asyncStorage.pushState.mock.calls).toEqual([]);
 
     expect(observer.next.mock.calls).toEqual([
       [{readyState: 'initializing', state: 'x', dispatch}],
@@ -188,10 +209,16 @@ describe('useAsyncReducer()', () => {
   });
 
   test('failing pushState()', async () => {
-    let asyncReducer!: AsyncReducer<State, string>;
+    let asyncStore!: AsyncStore<State, string>;
 
     const subject = new Subject(
-      () => (asyncReducer = useAsyncReducer(reducer, asyncStore, 'x'))
+      () =>
+        (asyncStore = useAsyncStore({
+          asyncStorage,
+          reducer,
+          initialState: 'x',
+          defaultState: 'd',
+        }))
     );
 
     subject.subscribe(observer);
@@ -202,14 +229,14 @@ describe('useAsyncReducer()', () => {
 
     await queueMicrotask();
 
-    asyncReducer.dispatch('b');
+    asyncStore.dispatch('b');
 
     pushState1.reject(new Error('Oops!'));
 
     await queueMacrotask();
 
-    expect(asyncStore.pullState.mock.calls).toEqual([[]]);
-    expect(asyncStore.pushState.mock.calls).toEqual([['ab', 1]]);
+    expect(asyncStorage.pullState.mock.calls).toEqual([['d']]);
+    expect(asyncStorage.pushState.mock.calls).toEqual([['ab', 1]]);
 
     expect(observer.next.mock.calls).toEqual([
       [{readyState: 'initializing', state: 'x', dispatch}],

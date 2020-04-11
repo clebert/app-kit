@@ -1,5 +1,5 @@
 import {decode, encode} from 'universal-base64';
-import {AsyncStore, Snapshot} from '../hooks/use-async-reducer';
+import {AsyncStorage, Snapshot} from '../hooks/use-async-store';
 import {GithubApi, RepositoryId} from './github-api';
 
 export interface GithubVersion {
@@ -7,25 +7,21 @@ export interface GithubVersion {
   readonly treeSha: string;
 }
 
-export interface GithubStoreInit<TState> {
+export interface GithubStorageParams {
   readonly githubApi: GithubApi;
   readonly repositoryId: RepositoryId;
   readonly referenceName: string;
   readonly filename: string;
-  readonly initialState: TState;
 }
 
-export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
-  public constructor(private readonly init: GithubStoreInit<TState>) {}
+export class GithubStorage<TState>
+  implements AsyncStorage<TState, GithubVersion> {
+  public constructor(private readonly params: GithubStorageParams) {}
 
-  public async pullState(): Promise<Snapshot<TState, GithubVersion>> {
-    const {
-      githubApi,
-      repositoryId,
-      referenceName,
-      filename,
-      initialState,
-    } = this.init;
+  public async pullState(
+    defaultState: TState
+  ): Promise<Snapshot<TState, GithubVersion>> {
+    const {githubApi, repositoryId, referenceName, filename} = this.params;
 
     const referenceResult = await githubApi.getReference(
       repositoryId,
@@ -54,7 +50,7 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
     const version: GithubVersion = {commitSha, treeSha};
 
     if (!blobSha) {
-      return {state: initialState, version};
+      return {state: defaultState, version};
     }
 
     const blobResult = await githubApi.getBlob(repositoryId, blobSha);
@@ -70,7 +66,7 @@ export class GithubStore<TState> implements AsyncStore<TState, GithubVersion> {
     state: TState,
     baseVersion: GithubVersion
   ): Promise<Snapshot<TState, GithubVersion> | undefined> {
-    const {githubApi, repositoryId, referenceName, filename} = this.init;
+    const {githubApi, repositoryId, referenceName, filename} = this.params;
 
     const blobResult = await githubApi.createBlob(
       repositoryId,

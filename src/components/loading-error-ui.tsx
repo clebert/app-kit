@@ -5,11 +5,13 @@ import {Container} from './bulma/container';
 import {Hero} from './bulma/hero';
 import {Title} from './bulma/title';
 
-export interface ErrorUiProps {
+export interface LoadingErrorUiProps {
   readonly children: preact.ComponentChildren;
 }
 
-export function ErrorUi({children}: ErrorUiProps): preact.JSX.Element {
+export function LoadingErrorUi({
+  children,
+}: LoadingErrorUiProps): preact.JSX.Element {
   const [errorParam, setErrorParam] = useSearchParam('error');
   const errorMessage = errorParam ?? 'An unknown error occured.';
 

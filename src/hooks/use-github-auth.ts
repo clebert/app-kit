@@ -29,7 +29,7 @@ export type GithubAuth =
   | LoggingInGithubAuth
   | LoggedInGithubAuth;
 
-export function useGithubAuth(authorizerApiPathname: string): GithubAuth {
+export function useGithubAuth(authorizerPathname: string): GithubAuth {
   const [error, setError] = hooks.useState<Error | undefined>(undefined);
 
   if (error) {
@@ -65,7 +65,7 @@ export function useGithubAuth(authorizerApiPathname: string): GithubAuth {
 
     searchParams.set('sessionId', newSessionId);
 
-    window.location.href = `${authorizerApiPathname}?${searchParams.toString()}`;
+    window.location.href = `${authorizerPathname}?${searchParams.toString()}`;
   }, [loggedIn, token]);
 
   const originalPath = hooks.useMemo(

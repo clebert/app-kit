@@ -1,12 +1,17 @@
 import * as hooks from 'preact/hooks';
 
+export type Reducer<TState, TAction> = (
+  previousState: TState,
+  action: TAction
+) => TState;
+
 export interface Snapshot<TState, TVersion> {
   readonly state: TState;
   readonly version: TVersion;
 }
 
-export interface AsyncStore<TState, TVersion> {
-  pullState(): Promise<Snapshot<TState, TVersion>>;
+export interface AsyncStorage<TState, TVersion> {
+  pullState(defaultState: TState): Promise<Snapshot<TState, TVersion>>;
 
   pushState(
     state: TState,
@@ -14,28 +19,30 @@ export interface AsyncStore<TState, TVersion> {
   ): Promise<Snapshot<TState, TVersion> | undefined>;
 }
 
-export type Reducer<TState, TAction> = (
-  previousState: TState,
-  action: TAction
-) => TState;
-
-export interface AsyncReducer<TState, TAction> {
+export interface AsyncStore<TState, TAction> {
   readonly readyState: 'initializing' | 'synchronizing' | 'idle';
   readonly state: TState;
 
   dispatch(action: TAction): void;
 }
 
-export function useAsyncReducer<TState, TAction, TVersion>(
-  reducer: Reducer<TState, TAction>,
-  asyncStore: AsyncStore<TState, TVersion> | undefined,
-  initialState: TState
-): AsyncReducer<TState, TAction> {
+export interface AsyncStoreHookParams<TState, TAction, TVersion> {
+  readonly asyncStorage: AsyncStorage<TState, TVersion> | undefined;
+  readonly reducer: Reducer<TState, TAction>;
+  readonly initialState: TState;
+  readonly defaultState: TState;
+}
+
+export function useAsyncStore<TState, TAction, TVersion>(
+  params: AsyncStoreHookParams<TState, TAction, TVersion>
+): AsyncStore<TState, TAction> {
   const [error, setError] = hooks.useState<Error | undefined>(undefined);
 
   if (error) {
     throw error;
   }
+
+  const {asyncStorage, reducer, initialState, defaultState} = params;
 
   const [snapshot, setSnapshot] = hooks.useState<
     Snapshot<TState, TVersion> | undefined
@@ -45,12 +52,12 @@ export function useAsyncReducer<TState, TAction, TVersion>(
   const [pushedActions, setPushedActions] = hooks.useState<TAction[]>([]);
 
   hooks.useEffect(() => {
-    asyncStore?.pullState().then(setSnapshot).catch(setError);
-  }, [asyncStore]);
+    asyncStorage?.pullState(defaultState).then(setSnapshot).catch(setError);
+  }, [asyncStorage]);
 
   hooks.useEffect(() => {
     if (
-      !asyncStore ||
+      !asyncStorage ||
       !snapshot ||
       unpushedActions.length === 0 ||
       pushedActions.length > 0
@@ -64,7 +71,7 @@ export function useAsyncReducer<TState, TAction, TVersion>(
     setPushedActions(actions);
 
     (async () => {
-      const newSnapshot = await asyncStore.pushState(
+      const newSnapshot = await asyncStorage.pushState(
         actions.reduce(reducer, snapshot.state),
         snapshot.version
       );
@@ -73,7 +80,7 @@ export function useAsyncReducer<TState, TAction, TVersion>(
         setSnapshot(newSnapshot);
         setPushedActions([]);
       } else {
-        setSnapshot(await asyncStore.pullState());
+        setSnapshot(await asyncStorage.pullState(defaultState));
 
         setUnpushedActions((previousActions) => [
           ...actions,
@@ -83,7 +90,7 @@ export function useAsyncReducer<TState, TAction, TVersion>(
         setPushedActions([]);
       }
     })().catch(setError);
-  }, [asyncStore, snapshot, unpushedActions]);
+  }, [asyncStorage, snapshot, unpushedActions]);
 
   const dispatch = hooks.useCallback(
     (action: TAction) =>
