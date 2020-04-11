@@ -5,15 +5,14 @@ import {Container} from './bulma/container';
 import {Hero} from './bulma/hero';
 import {Title} from './bulma/title';
 
-export interface LoadingErrorUiProps {
+export interface ExternalErrorProps {
   readonly children: preact.ComponentChildren;
 }
 
-export function LoadingErrorUi({
+export function ExternalError({
   children,
-}: LoadingErrorUiProps): preact.JSX.Element {
+}: ExternalErrorProps): preact.JSX.Element {
   const [errorParam, setErrorParam] = useSearchParam('error');
-  const errorMessage = errorParam ?? 'An unknown error occured.';
 
   hooks.useEffect(() => {
     if (errorParam !== undefined) {
@@ -31,7 +30,7 @@ export function LoadingErrorUi({
             <Title size="1">Oops!</Title>
 
             <Title size="3" isSubtitle>
-              {errorMessage}
+              {errorParam ?? 'An unknown error occured.'}
             </Title>
           </Container>
         </Hero>

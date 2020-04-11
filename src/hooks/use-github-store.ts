@@ -1,13 +1,15 @@
 import * as hooks from 'preact/hooks';
 import {GithubApi} from '../classes/github-api';
 import {GithubStorage} from '../classes/github-storage';
-import {AsyncStore, useAsyncStore} from './use-async-store';
+import {AsyncStore, Reducer, useAsyncStore} from './use-async-store';
 import {GithubRepository} from './use-github-repository';
 
-export type Reducer<TState, TAction> = (
-  state: TState,
-  action: TAction
-) => TState;
+export interface GithubStore<TState, TAction>
+  extends AsyncStore<TState, TAction> {
+  readonly githubRepository: GithubRepository;
+  readonly referenceName: string;
+  readonly filename: string;
+}
 
 export interface GithubStoreHookParams<TState, TAction> {
   readonly githubRepository: GithubRepository;
@@ -17,9 +19,11 @@ export interface GithubStoreHookParams<TState, TAction> {
   readonly cacheVersion?: number;
 }
 
+const referenceName = 'master';
+
 export function useGithubStore<TState, TAction>(
   params: GithubStoreHookParams<TState, TAction>
-): AsyncStore<TState, TAction> {
+): GithubStore<TState, TAction> {
   const {
     githubRepository,
     filename,
@@ -38,19 +42,31 @@ export function useGithubStore<TState, TAction>(
     return new GithubStorage({
       githubApi: new GithubApi(githubAuth.token),
       repositoryId,
-      referenceName: 'master',
+      referenceName,
       filename,
     });
   }, [githubRepository, filename]);
 
-  const cacheKey = hooks.useMemo(
-    () =>
-      cacheVersion !== undefined &&
-      githubRepository.readyState !== 'unauthorized'
-        ? `${filename}-v${cacheVersion}-${githubRepository.githubAuth.user.login}`
-        : undefined,
-    [githubRepository]
-  );
+  const cacheKey = hooks.useMemo(() => {
+    if (
+      cacheVersion === undefined ||
+      githubRepository.readyState === 'unauthorized' ||
+      githubRepository.readyState === 'incomplete'
+    ) {
+      return undefined;
+    }
+
+    const {githubAuth, repositoryId} = githubRepository;
+
+    return [
+      githubAuth.user.login,
+      repositoryId.ownerName,
+      repositoryId.repositoryName,
+      referenceName,
+      filename,
+      cacheVersion,
+    ].join('-');
+  }, [githubRepository, filename, cacheVersion]);
 
   const rawCachedState = hooks.useMemo(
     () => (cacheKey && localStorage.getItem(cacheKey)) || undefined,
@@ -69,7 +85,7 @@ export function useGithubStore<TState, TAction>(
     return defaultState;
   }, [rawCachedState]);
 
-  const githubStore = useAsyncStore({
+  const asyncStore = useAsyncStore({
     asyncStorage: githubStorage,
     reducer,
     initialState: cachedState,
@@ -77,14 +93,17 @@ export function useGithubStore<TState, TAction>(
   });
 
   hooks.useEffect(() => {
-    if (cacheKey && githubStore.readyState !== 'initializing') {
+    if (cacheKey && asyncStore.readyState !== 'initializing') {
       try {
-        localStorage.setItem(cacheKey, JSON.stringify(githubStore.state));
+        localStorage.setItem(cacheKey, JSON.stringify(asyncStore.state));
       } catch (error) {
         console.error(`Unable to store cached state "${cacheKey}".`, error);
       }
     }
-  }, [cacheKey, githubStore]);
+  }, [cacheKey, asyncStore]);
 
-  return githubStore;
+  return hooks.useMemo(
+    () => ({...asyncStore, githubRepository, referenceName, filename}),
+    [githubRepository, filename, asyncStore]
+  );
 }
