@@ -1,5 +1,5 @@
 import {decode, encode} from 'universal-base64';
-import {AsyncStorage, Snapshot} from '../hooks/use-async-store';
+import {AsyncStorage, Snapshot} from '../hooks/create-async-store-hook';
 import {GithubApi, RepositoryId} from './github-api';
 
 export interface GithubVersion {
@@ -7,7 +7,7 @@ export interface GithubVersion {
   readonly treeSha: string;
 }
 
-export interface GithubStorageParams {
+export interface GithubStorageInit {
   readonly githubApi: GithubApi;
   readonly repositoryId: RepositoryId;
   readonly referenceName: string;
@@ -16,12 +16,12 @@ export interface GithubStorageParams {
 
 export class GithubStorage<TState>
   implements AsyncStorage<TState, GithubVersion> {
-  public constructor(private readonly params: GithubStorageParams) {}
+  public constructor(private readonly init: GithubStorageInit) {}
 
   public async pullState(
     defaultState: TState
   ): Promise<Snapshot<TState, GithubVersion>> {
-    const {githubApi, repositoryId, referenceName, filename} = this.params;
+    const {githubApi, repositoryId, referenceName, filename} = this.init;
 
     const referenceResult = await githubApi.getReference(
       repositoryId,
@@ -66,7 +66,7 @@ export class GithubStorage<TState>
     state: TState,
     baseVersion: GithubVersion
   ): Promise<Snapshot<TState, GithubVersion> | undefined> {
-    const {githubApi, repositoryId, referenceName, filename} = this.params;
+    const {githubApi, repositoryId, referenceName, filename} = this.init;
 
     const blobResult = await githubApi.createBlob(
       repositoryId,

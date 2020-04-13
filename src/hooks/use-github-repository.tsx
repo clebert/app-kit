@@ -5,7 +5,7 @@ import {
   LoggedInGithubAuth,
   LoggedOutGithubAuth,
   LoggingInGithubAuth,
-} from './use-github-auth';
+} from './create-github-auth-hook';
 
 export interface UnauthorizedGithubRepository {
   readonly readyState: 'unauthorized';

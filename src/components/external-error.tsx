@@ -1,6 +1,6 @@
 import * as preact from 'preact';
 import * as hooks from 'preact/hooks';
-import {useSearchParam} from '../hooks/use-search-param';
+import {createSearchParamHook} from '../hooks/create-search-param-hook';
 import {Container} from './bulma/container';
 import {Hero} from './bulma/hero';
 import {Title} from './bulma/title';
@@ -9,10 +9,12 @@ export interface ExternalErrorProps {
   readonly children: preact.ComponentChildren;
 }
 
+const useErrorParam = createSearchParamHook('error');
+
 export function ExternalError({
   children,
 }: ExternalErrorProps): preact.JSX.Element {
-  const [errorParam, setErrorParam] = useSearchParam('error');
+  const [errorParam, setErrorParam] = useErrorParam();
 
   hooks.useEffect(() => {
     if (errorParam !== undefined) {

@@ -1,6 +1,10 @@
 import {Subject} from 'ironhook';
 import defer from 'p-defer';
-import {AsyncStore, Snapshot, useAsyncStore} from './use-async-store';
+import {
+  AsyncStore,
+  Snapshot,
+  createAsyncStoreHook,
+} from './create-async-store-hook';
 
 jest.mock('preact/hooks', () => require('ironhook'));
 
@@ -33,6 +37,7 @@ function reducer(previousState: State, action: string): State {
   return (previousState || '') + action;
 }
 
+const useAsyncStore = createAsyncStoreHook(reducer, 'd');
 const dispatch = expect.any(Function);
 
 describe('useAsyncStore()', () => {
@@ -65,14 +70,7 @@ describe('useAsyncStore()', () => {
 
   describe('without async storage', () => {
     test('initializing -> idle', async () => {
-      const subject = new Subject(() =>
-        useAsyncStore({
-          asyncStorage: undefined,
-          reducer,
-          initialState: 'x',
-          defaultState: 'd',
-        })
-      );
+      const subject = new Subject(() => useAsyncStore(undefined, 'x'));
 
       subject.subscribe(observer);
 
@@ -88,14 +86,7 @@ describe('useAsyncStore()', () => {
   });
 
   test('initializing -> idle', async () => {
-    const subject = new Subject(() =>
-      useAsyncStore({
-        asyncStorage,
-        reducer,
-        initialState: 'x',
-        defaultState: 'd',
-      })
-    );
+    const subject = new Subject(() => useAsyncStore(asyncStorage, 'x'));
 
     subject.subscribe(observer);
 
@@ -121,13 +112,7 @@ describe('useAsyncStore()', () => {
     let asyncStore!: AsyncStore<State, string>;
 
     const subject = new Subject(
-      () =>
-        (asyncStore = useAsyncStore({
-          asyncStorage,
-          reducer,
-          initialState: 'x',
-          defaultState: 'd',
-        }))
+      () => (asyncStore = useAsyncStore(asyncStorage, 'x'))
     );
 
     subject.subscribe(observer);
@@ -180,14 +165,7 @@ describe('useAsyncStore()', () => {
   });
 
   test('failing pullState()', async () => {
-    const subject = new Subject(() =>
-      useAsyncStore({
-        asyncStorage,
-        reducer,
-        initialState: 'x',
-        defaultState: 'd',
-      })
-    );
+    const subject = new Subject(() => useAsyncStore(asyncStorage, 'x'));
 
     subject.subscribe(observer);
 
@@ -212,13 +190,7 @@ describe('useAsyncStore()', () => {
     let asyncStore!: AsyncStore<State, string>;
 
     const subject = new Subject(
-      () =>
-        (asyncStore = useAsyncStore({
-          asyncStorage,
-          reducer,
-          initialState: 'x',
-          defaultState: 'd',
-        }))
+      () => (asyncStore = useAsyncStore(asyncStorage, 'x'))
     );
 
     subject.subscribe(observer);
