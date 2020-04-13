@@ -83,6 +83,8 @@ export interface UpdateReferenceResultValue {}
 
 export interface CreateRepositoryOptions {
   readonly organizationName?: string;
+  readonly description?: string;
+  readonly homepage?: string;
   readonly private?: boolean;
 }
 
@@ -173,7 +175,7 @@ export class GithubApi {
     repositoryName: string,
     options: CreateRepositoryOptions = {}
   ): Promise<GithubApiResult<CreateRepositoryResultValue>> {
-    const {organizationName} = options;
+    const {organizationName, description, homepage} = options;
 
     const pathname = organizationName
       ? `/orgs/${organizationName}/repos`
@@ -181,6 +183,8 @@ export class GithubApi {
 
     return this.fetch('POST', pathname, {
       name: repositoryName,
+      description,
+      homepage,
       private: options.private,
       auto_init: true,
     });
