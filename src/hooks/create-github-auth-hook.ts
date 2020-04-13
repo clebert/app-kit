@@ -4,7 +4,7 @@ import {GetUserResultValue, GithubApi} from '../classes/github-api';
 import {HistoryContext} from '../contexts/history-context';
 import {createRandomValue} from '../utils/create-random-value';
 import {createLocalStorageHook} from './create-local-storage-hook';
-import {createSearchParamHook} from './create-search-param-hook';
+import {createParamHook} from './create-param-hook';
 
 export interface LoggedOutGithubAuth {
   readonly readyState: 'loggedOut';
@@ -31,14 +31,14 @@ export type GithubAuth =
 
 export type GithubAuthHook = () => GithubAuth;
 
+const useLoggedIn = createLocalStorageHook('loggedIn');
+const useToken = createLocalStorageHook('token');
+const useTokenParam = createParamHook('token');
+const useSessionIdParam = createParamHook('sessionId');
+
 export function createGithubAuthHook(
   authorizerPathname: string
 ): GithubAuthHook {
-  const useLoggedIn = createLocalStorageHook('loggedIn');
-  const useToken = createLocalStorageHook('token');
-  const useTokenParam = createSearchParamHook('token');
-  const useSessionIdParam = createSearchParamHook('sessionId');
-
   return () => {
     const [error, setError] = hooks.useState<Error | undefined>(undefined);
 

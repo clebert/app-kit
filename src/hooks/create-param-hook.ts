@@ -2,12 +2,12 @@ import * as hooks from 'preact/hooks';
 import {HistoryContext} from '../contexts/history-context';
 import {useLocation} from './use-location';
 
-export type SearchParamHook = () => [
+export type ParamHook = () => [
   string | undefined,
   (value: string | undefined) => void
 ];
 
-export function createSearchParamHook(paramName: string): SearchParamHook {
+export function createParamHook(paramName: string): ParamHook {
   return () => {
     const {search} = useLocation();
 

@@ -1,6 +1,6 @@
 import * as preact from 'preact';
 import * as hooks from 'preact/hooks';
-import {createSearchParamHook} from '../hooks/create-search-param-hook';
+import {createParamHook} from '../hooks/create-param-hook';
 import {Container} from './bulma/container';
 import {Hero} from './bulma/hero';
 import {Title} from './bulma/title';
@@ -9,7 +9,7 @@ export interface ExternalErrorProps {
   readonly children: preact.ComponentChildren;
 }
 
-const useErrorParam = createSearchParamHook('error');
+const useErrorParam = createParamHook('error');
 
 export function ExternalError({
   children,
