@@ -6,64 +6,64 @@ import {
   Reducer,
   createAsyncStoreHook,
 } from './create-async-store-hook';
-import {GithubRepository} from './use-github-repository';
+import {Repository} from './use-repository';
 
-export interface GithubStore<TState, TAction>
+export interface RepositoryStore<TState, TAction>
   extends AsyncStore<TState, TAction> {
-  readonly githubRepository: GithubRepository;
+  readonly repository: Repository;
   readonly referenceName: string;
   readonly filename: string;
 }
 
-export type GithubStoreHook<TState, TAction> = (
-  githubRepository: GithubRepository
-) => GithubStore<TState, TAction>;
+export type RepositoryStoreHook<TState, TAction> = (
+  repository: Repository
+) => RepositoryStore<TState, TAction>;
 
 const referenceName = 'master';
 
-export function createGithubStoreHook<TState, TAction>(
+export function createRepositoryStoreHook<TState, TAction>(
   filename: string,
   reducer: Reducer<TState, TAction>,
   defaultState: TState
-): GithubStoreHook<TState, TAction> {
+): RepositoryStoreHook<TState, TAction> {
   const useAsyncStore = createAsyncStoreHook(reducer, defaultState);
 
-  return (githubRepository) => {
+  return (repository) => {
     const githubStorage = hooks.useMemo<
       GithubStorage<TState> | undefined
     >(() => {
-      if (githubRepository.readyState !== 'accessible') {
+      if (repository.readyState !== 'accessible') {
         return undefined;
       }
 
-      const {githubAuth, repositoryId} = githubRepository;
+      const {authStatus, repositoryId} = repository;
 
       return new GithubStorage({
-        githubApi: new GithubApi(githubAuth.token),
+        githubApi: new GithubApi(authStatus.token),
         repositoryId,
         referenceName,
         filename,
       });
-    }, [githubRepository]);
+    }, [repository]);
 
     const cacheKey = hooks.useMemo(() => {
       if (
-        githubRepository.readyState === 'unauthorized' ||
-        githubRepository.readyState === 'incomplete'
+        repository.readyState === 'unauthorized' ||
+        repository.readyState === 'incomplete'
       ) {
         return undefined;
       }
 
-      const {githubAuth, repositoryId} = githubRepository;
+      const {authStatus, repositoryId} = repository;
 
       return [
-        githubAuth.user.login,
+        authStatus.username,
         repositoryId.ownerName,
         repositoryId.repositoryName,
         referenceName,
         filename,
       ].join('-');
-    }, [githubRepository]);
+    }, [repository]);
 
     const rawCachedState = hooks.useMemo(
       () => (cacheKey && localStorage.getItem(cacheKey)) || undefined,
@@ -95,8 +95,8 @@ export function createGithubStoreHook<TState, TAction>(
     }, [cacheKey, asyncStore]);
 
     return hooks.useMemo(
-      () => ({...asyncStore, githubRepository, referenceName, filename}),
-      [githubRepository, asyncStore]
+      () => ({...asyncStore, repository, referenceName, filename}),
+      [repository, asyncStore]
     );
   };
 }

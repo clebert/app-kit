@@ -1,44 +1,44 @@
 import * as cookie from 'cookie';
 import * as hooks from 'preact/hooks';
-import {GetUserResultValue, GithubApi} from '../classes/github-api';
+import {GithubApi} from '../classes/github-api';
 import {HistoryContext} from '../contexts/history-context';
 import {createRandomValue} from '../utils/create-random-value';
 import {createLocalStorageHook} from './create-local-storage-hook';
 import {createParamHook} from './create-param-hook';
 
-export interface LoggedOutGithubAuth {
+export interface LoggedOutAuthStatus {
   readonly readyState: 'loggedOut';
 
   login(): void;
 }
 
-export interface LoggingInGithubAuth {
+export interface LoggingInAuthStatus {
   readonly readyState: 'loggingIn';
 }
 
-export interface LoggedInGithubAuth {
+export interface LoggedInAuthStatus {
   readonly readyState: 'loggedIn';
   readonly token: string;
-  readonly user: GetUserResultValue;
+  readonly username: string;
 
   logout(): void;
 }
 
-export type GithubAuth =
-  | LoggedOutGithubAuth
-  | LoggingInGithubAuth
-  | LoggedInGithubAuth;
+export type AuthStatus =
+  | LoggedOutAuthStatus
+  | LoggingInAuthStatus
+  | LoggedInAuthStatus;
 
-export type GithubAuthHook = () => GithubAuth;
+export type AuthStatusHook = () => AuthStatus;
 
 const useLoggedIn = createLocalStorageHook('loggedIn');
 const useToken = createLocalStorageHook('token');
 const useTokenParam = createParamHook('token');
 const useSessionIdParam = createParamHook('sessionId');
 
-export function createGithubAuthHook(
+export function createAuthStatusHook(
   authorizerPathname: string
-): GithubAuthHook {
+): AuthStatusHook {
   return () => {
     const [error, setError] = hooks.useState<Error | undefined>(undefined);
 
@@ -104,12 +104,12 @@ export function createGithubAuthHook(
       setToken(tokenParam);
     }, [tokenParam]);
 
-    const [user, setUser] = hooks.useState<GetUserResultValue | undefined>(
+    const [username, setUsername] = hooks.useState<string | undefined>(
       undefined
     );
 
     hooks.useEffect(() => {
-      setUser(undefined);
+      setUsername(undefined);
 
       if (loggedIn !== 'true' || !token) {
         return;
@@ -127,7 +127,7 @@ export function createGithubAuthHook(
               throw new Error(userResult.message);
             }
           } else {
-            setUser(userResult.value);
+            setUsername(userResult.value.login);
           }
         })
         .catch(setError);
@@ -144,12 +144,12 @@ export function createGithubAuthHook(
 
     return hooks.useMemo(
       () =>
-        token && user
-          ? {readyState: 'loggedIn', token, user, logout}
+        token && username
+          ? {readyState: 'loggedIn', token, username, logout}
           : loggedIn === 'true'
           ? {readyState: 'loggingIn'}
           : {readyState: 'loggedOut', login},
-      [loggedIn, token, user]
+      [loggedIn, token, username]
     );
   };
 }
