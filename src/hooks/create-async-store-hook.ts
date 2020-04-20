@@ -50,7 +50,11 @@ export function createAsyncStoreHook<TState, TAction, TVersion>(
     const [pushedActions, setPushedActions] = hooks.useState<TAction[]>([]);
 
     hooks.useEffect(() => {
-      asyncStorage?.pullState(defaultState).then(setSnapshot).catch(setError);
+      if (!asyncStorage) {
+        setSnapshot(undefined);
+      } else {
+        asyncStorage.pullState(defaultState).then(setSnapshot).catch(setError);
+      }
     }, [asyncStorage]);
 
     hooks.useEffect(() => {
@@ -98,18 +102,19 @@ export function createAsyncStoreHook<TState, TAction, TVersion>(
 
     return hooks.useMemo(
       () => ({
-        readyState: !snapshot
-          ? 'initializing'
-          : unpushedActions.length + pushedActions.length > 0
-          ? 'synchronizing'
-          : 'idle',
+        readyState:
+          !asyncStorage || !snapshot
+            ? 'initializing'
+            : unpushedActions.length + pushedActions.length > 0
+            ? 'synchronizing'
+            : 'idle',
         state: [...pushedActions, ...unpushedActions].reduce(
           reducer,
-          snapshot ? snapshot.state : initialState
+          asyncStorage && snapshot ? snapshot.state : initialState
         ),
         dispatch,
       }),
-      [initialState, snapshot, unpushedActions, pushedActions]
+      [asyncStorage, initialState, snapshot, unpushedActions, pushedActions]
     );
   };
 }
