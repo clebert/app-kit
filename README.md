@@ -53,4 +53,4 @@ via the GitHub UI. This triggers the final publication to npm.
 ---
 
 Copyright (c) 2020, Clemens Akens. Released under the terms of the
-[MIT License](https://github.com/clebert/mylibrary/blob/master/LICENSE).
+[MIT License](https://github.com/clebert/app-kit/blob/master/LICENSE).
