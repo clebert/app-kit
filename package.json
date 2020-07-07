@@ -34,7 +34,7 @@
   "dependencies": {
     "classnames": "^2.2.6",
     "cookie": "^0.4.0",
-    "history": "^4.10.1",
+    "history": "^5.0.0",
     "node-fetch": "^2.6.0",
     "universal-base64": "^2.1.0"
   },

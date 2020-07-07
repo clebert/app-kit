@@ -6,7 +6,10 @@ export function useLocation(): Location {
   const history = hooks.useContext(HistoryContext);
   const [, setLocation] = hooks.useState(history.location);
 
-  hooks.useEffect(() => history.listen(setLocation), [history]);
+  hooks.useEffect(
+    () => history.listen((update) => setLocation(update.location)),
+    [history]
+  );
 
   return history.location;
 }
